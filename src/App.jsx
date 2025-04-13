@@ -1,6 +1,3 @@
-// Entry point for a React + Tailwind inventory app for a plumbing business
-// Now includes a testable inventory list with form inputs and dummy data
-
 import { useState } from "react";
 
 export default function App() {
@@ -10,7 +7,7 @@ export default function App() {
   const [inventory, setInventory] = useState([
     {
       id: 1,
-      name: "3/4" PVC Elbow",
+      name: '3/4" PVC Elbow',
       description: "Standard 90-degree elbow fitting",
       quantity: 12,
       price: 1.25,
