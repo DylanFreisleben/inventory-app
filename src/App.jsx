@@ -6,6 +6,7 @@ export default function App() {
   const [totalItems, setTotalItems] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const [inventory, setInventory] = useState([]);
 
@@ -38,9 +39,13 @@ export default function App() {
       mainPhoto: null,
     };
     const updated = [...inventory, newItem];
-    setInventory(updated);
+    updateInventory(updated);
     setForm({ name: "", description: "", quantity: 0, price: 0 });
     setShowForm(false);
+  };
+
+  const updateInventory = (updated) => {
+    setInventory(updated);
     localStorage.setItem("inventory", JSON.stringify(updated));
     const totalQty = updated.reduce((sum, item) => sum + item.quantity, 0);
     const totalVal = updated.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -48,14 +53,16 @@ export default function App() {
     setTotalValue(totalVal);
   };
 
+  const handleSaveEdit = () => {
+    const updated = inventory.map(item => item.id === selectedItem.id ? { ...selectedItem, ...form } : item);
+    updateInventory(updated);
+    setSelectedItem(null);
+    setIsEditing(false);
+  };
+
   const handleDeleteItem = (id) => {
     const updated = inventory.filter(item => item.id !== id);
-    setInventory(updated);
-    localStorage.setItem("inventory", JSON.stringify(updated));
-    const totalQty = updated.reduce((sum, item) => sum + item.quantity, 0);
-    const totalVal = updated.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    setTotalItems(totalQty);
-    setTotalValue(totalVal);
+    updateInventory(updated);
     setSelectedItem(null);
   };
 
@@ -96,7 +103,7 @@ export default function App() {
             <h3 className="text-lg font-semibold mb-2">Inventory List</h3>
             <ul className="space-y-2">
               {inventory.map(item => (
-                <li key={item.id} className="border p-3 rounded shadow cursor-pointer" onClick={() => setSelectedItem(item)}>
+                <li key={item.id} className="border p-3 rounded shadow cursor-pointer" onClick={() => { setSelectedItem(item); setForm(item); setIsEditing(false); }}>
                   <div className="font-semibold">{item.name}</div>
                   <div className="text-sm text-gray-600">{item.description}</div>
                   <div className="text-sm">Quantity: {item.quantity}</div>
@@ -141,25 +148,54 @@ export default function App() {
           {selectedItem && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg w-11/12 max-w-md shadow-lg relative p-6">
-                <button className="absolute top-4 right-4 text-sm bg-blue-500 text-white px-3 py-1 rounded">Edit</button>
-                <h3 className="text-xl font-bold mb-2">{selectedItem.name}</h3>
-                <p className="text-sm text-gray-600 mb-1">{selectedItem.description}</p>
-                <p className="text-sm">Quantity: {selectedItem.quantity}</p>
-                <p className="text-sm">Price per Item: ${selectedItem.price.toFixed(2)}</p>
-                <p className="text-sm mb-4">Total Value: ${(selectedItem.price * selectedItem.quantity).toFixed(2)}</p>
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                  {selectedItem.photos?.map((photo, i) => (
-                    <div key={i} className="w-20 h-20 bg-gray-200 rounded overflow-hidden">
-                      <img src={photo} alt="part" className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                  <div className="w-20 h-20 border border-gray-300 rounded flex items-center justify-center relative">
-                    <div className="w-8 h-8 border border-gray-400 rounded-full flex items-center justify-center text-gray-500 absolute bottom-1 right-1 text-xl">+</div>
-                    <div className="text-gray-400 text-xs">🖼️</div>
-                  </div>
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <button className="bg-blue-500 text-white text-xs px-2 py-1 rounded" onClick={() => setIsEditing(true)}>Edit</button>
+                  <button className="bg-red-500 text-white text-lg rounded-full w-6 h-6 flex items-center justify-center" onClick={() => setSelectedItem(null)}>×</button>
                 </div>
-                <button className="w-full bg-red-500 text-white py-2 rounded" onClick={() => handleDeleteItem(selectedItem.id)}>Delete Item</button>
-                <button className="absolute top-2 left-2 text-xl" onClick={() => setSelectedItem(null)}>×</button>
+
+                {!isEditing ? (
+                  <>
+                    <h3 className="text-xl font-bold mb-2">{selectedItem.name}</h3>
+                    <p className="text-sm text-gray-600 mb-1">{selectedItem.description}</p>
+                    <p className="text-sm">Quantity: {selectedItem.quantity}</p>
+                    <p className="text-sm">Price per Item: ${selectedItem.price.toFixed(2)}</p>
+                    <p className="text-sm mb-4">Total Value: ${(selectedItem.price * selectedItem.quantity).toFixed(2)}</p>
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      {selectedItem.photos?.map((photo, i) => (
+                        <div key={i} className="w-20 h-20 bg-gray-200 rounded overflow-hidden">
+                          <img src={photo} alt="part" className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                      <div className="w-20 h-20 border border-gray-300 rounded flex items-center justify-center relative">
+                        <div className="w-8 h-8 border border-gray-400 rounded-full flex items-center justify-center text-gray-500 absolute bottom-1 right-1 text-xl">+</div>
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h2l.4 2M7 13h10l1.5-7H6.4M7 13l-1.5 7h11l1.5-7M7 13L5 5h14l-2 8" />
+                        </svg>
+                      </div>
+                    </div>
+                    <button className="w-full bg-red-500 text-white py-2 rounded" onClick={() => handleDeleteItem(selectedItem.id)}>Delete Item</button>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-lg font-semibold mb-4">Edit Item</h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      <input className="border p-2 rounded" placeholder="Item name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                      <input className="border p-2 rounded" placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+                      <div className="flex items-center border p-2 rounded">
+                        <span className="mr-2 text-sm text-gray-500">Qty.</span>
+                        <input className="flex-1 outline-none" type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} />
+                      </div>
+                      <div className="flex items-center border p-2 rounded">
+                        <span className="mr-2 text-sm text-gray-500">$</span>
+                        <input className="flex-1 outline-none" type="number" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} placeholder="Cost/1" />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 mt-4">
+                      <button className="bg-gray-300 text-gray-800 px-4 py-2 rounded" onClick={() => setIsEditing(false)}>Cancel</button>
+                      <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={handleSaveEdit}>Save</button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
